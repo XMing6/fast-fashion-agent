@@ -1,0 +1,229 @@
+### Fast Fashion Agent 测试文档
+### 使用 REST Client 插件 (如 IntelliJ IDEA / VS Code) 或 curl 执行
+
+@baseUrl = http://localhost:8080
+@contentType = application/json
+
+#######################################
+# 1. 意图识别测试
+#######################################
+GET {{baseUrl}}/test
+
+### 测试订单相关意图识别
+POST {{baseUrl}}/chat
+Content-Type: {{contentType}}
+
+{
+  "message": "我的订单在哪里？",
+  "history": ""
+}
+
+### 测试物流相关意图识别
+POST {{baseUrl}}/chat
+Content-Type: {{contentType}}
+
+{
+  "message": "我想修改收货地址",
+  "history": ""
+}
+
+### 测试未知意图识别
+POST {{baseUrl}}/chat
+Content-Type: {{contentType}}
+
+{
+  "message": "你们有什么新品推荐？",
+  "history": ""
+}
+
+#######################################
+# 2. 订单状态查询测试
+#######################################
+POST {{baseUrl}}/chat
+Content-Type: {{contentType}}
+
+{
+  "message": "查询订单号123的状态",
+  "history": ""
+}
+
+### 订单号 456 (已发货)
+POST {{baseUrl}}/chat
+Content-Type: {{contentType}}
+
+{
+  "message": "订单456什么时候能收到？",
+  "history": ""
+}
+
+### 订单号 789 (已送达)
+POST {{baseUrl}}/chat
+Content-Type: {{contentType}}
+
+{
+  "message": "订单789我已经收到了，谢谢",
+  "history": ""
+}
+
+#######################################
+# 3. 订单修改测试
+#######################################
+### 修改收货地址
+POST {{baseUrl}}/chat
+Content-Type: {{contentType}}
+
+{
+  "message": "我要修改订单123的收货地址，改成北京市朝阳区望京SOHO",
+  "history": ""
+}
+
+### 添加商品
+POST {{baseUrl}}/chat
+Content-Type: {{contentType}}
+
+{
+  "message": "我想在订单123里加一件衣服",
+  "history": ""
+}
+
+### 取消订单
+POST {{baseUrl}}/chat
+Content-Type: {{contentType}}
+
+{
+  "message": "我想取消订单123",
+  "history": ""
+}
+
+#######################################
+# 4. 物流问题测试
+#######################################
+### 物流超时
+POST {{baseUrl}}/chat
+Content-Type: {{contentType}}
+
+{
+  "message": "我的订单已经超过7天了还没收到",
+  "history": ""
+}
+
+### 包裹显示已签收但未收到
+POST {{baseUrl}}/chat
+Content-Type: {{contentType}}
+
+{
+  "message": "包裹显示已经签收了，但我没收到",
+  "history": ""
+}
+
+### 查询物流
+POST {{baseUrl}}/chat
+Content-Type: {{contentType}}
+
+{
+  "message": "帮我查一下订单456的物流信息",
+  "history": ""
+}
+
+#######################################
+# 5. 多轮对话测试
+#######################################
+### 第一轮: 询问订单
+POST {{baseUrl}}/chat
+Content-Type: {{contentType}}
+
+{
+  "message": "我想查一下订单123",
+  "history": "客户：我想查一下订单123"
+}
+
+### 第二轮: 询问修改
+POST {{baseUrl}}/chat
+Content-Type: {{contentType}}
+
+{
+  "message": "可以修改收货地址吗？",
+  "history": "客户：我想查一下订单123\n助手：您好，订单123目前状态为处理中，包含商品：T恤、牛仔裤，金额：¥299.00"
+}
+
+### 第三轮: 修改地址
+POST {{baseUrl}}/chat
+Content-Type: {{contentType}}
+
+{
+  "message": "改成北京市朝阳区三里屯太古里",
+  "history": "客户：我想查一下订单123\n助手：您好，订单123目前状态为处理中\n客户：可以修改收货地址吗？\n助手：是的，订单仍在处理中，可以修改收货地址。请问您的新地址是什么？"
+}
+
+#######################################
+# 6. MCP 协议测试
+#######################################
+### MCP 请求示例 (需要使用 MCP 客户端)
+# 可以通过 WebSocket 或 HTTP 与 MCP Server 交互
+# MCP endpoint: http://localhost:8080/mcp
+
+# 以下为 JSON-RPC 格式的 MCP 请求示例
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/list"
+}
+
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "method": "tools/call",
+  "params": {
+    "name": "get_order_info",
+    "arguments": {
+      "order_id": "123"
+    }
+  }
+}
+
+{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "method": "tools/call",
+  "params": {
+    "name": "get_sop_tree",
+    "arguments": {
+      "sop_type": "order"
+    }
+  }
+}
+
+#######################################
+# 7. curl 命令示例
+#######################################
+# 查询订单
+curl -X GET http://localhost:8080/test
+
+# 聊天对话
+curl -X POST http://localhost:8080/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message":"查询订单123的状态","history":""}'
+
+# 修改订单地址 (通过 MCP)
+# 注意: 需要使用 MCP 客户端工具
+# 可以参考 Claude Desktop、Continue 等工具的 MCP 配置
+
+#######################################
+# 8. 错误场景测试
+#######################################
+### 查询不存在的订单
+POST {{baseUrl}}/chat
+Content-Type: {{contentType}}
+
+{
+  "message": "查询订单999的状态",
+  "history": ""
+}
+
+### 无效的请求格式
+POST {{baseUrl}}/chat
+Content-Type: {{contentType}}
+
+{
+  "invalid": "data"
+}
